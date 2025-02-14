@@ -4,6 +4,7 @@ const fs = require('fs');
 const cors = require('cors');
 const app = express();
 const server = http.createServer(app);
+require('dotenv').config()
 
 const socket = require('socket.io')(server, {
     cors: { origin: "*" },
@@ -11,6 +12,7 @@ const socket = require('socket.io')(server, {
     transports: ["websocket", "polling"],
     pingTimeout: 60000
 });
+
 const io = socket.of('/socket.io');
 
 app.use(cors());
@@ -34,12 +36,14 @@ io.on("connection", (socket) => {
         console.log('sync-content');
         io.emit("update-content", data);
     });
+
     socket.on("request-content", (data) => {
         const content = JSON.parse(fs.readFileSync(contentFile, "utf-8"));
         io.emit("update-content", content);
     });
 
     socket.on("disconnect", () => console.log("Client disconnected:", socket.id));
+
 });
 
 app.get("/content", (req, res) => {
@@ -49,4 +53,6 @@ app.get("/content", (req, res) => {
     res.json({});
 });
 
-server.listen(5000, () => console.log('Server running on port 5000'));
+const port = process.env.PORT || 5000
+
+server.listen(port, () => console.log('Server running on port:', port));
