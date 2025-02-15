@@ -2,6 +2,7 @@
     "name": "backend",
     "version": "1.0.0",
     "description": "",
+    "type": "module",
     "main": "index.js",
     "scripts": {
         "dev": "nodemon index.js",
@@ -15,6 +16,9 @@
         "express": "^4.21.2",
         "fs": "^0.0.1-security",
         "http": "^0.0.1-security",
+        "joi": "^17.13.3",
+        "lodash": "^4.17.21",
+        "mongoose": "^8.10.1",
         "socket.io": "^4.8.1",
         "ws": "^8.18.0"
     },
