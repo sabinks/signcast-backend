@@ -16,6 +16,7 @@ jobs:
           username: ${{secrets.SSH_USERNAME}}
 
           script: |
+            export PATH=$PATH:/home/ubuntu/.nvm/versions/node/v22.13.1/bin
             cd /var/www/signcast/signcast-backend
             git checkout .
             git checkout master
