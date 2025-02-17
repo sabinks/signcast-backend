@@ -7,7 +7,7 @@ import connectDB from './config/db.js'
 import router from './routes/appRouter.js';
 // import codeRouter from './routes/codeRouter.js';
 import { Screen, validateScreen } from './model/screen.js';
-
+import schedule from 'node-schedule';
 const app = express();
 const server = http.createServer(app);
 
@@ -16,16 +16,20 @@ app.use(express.json());
 app.use(cors());
 app.use('/api/screens', router);
 // app.use('/api/pairing', codeRouter);
-const connectedDevices = []
+let connectedDevices = []
 const socket = new Server(server, {
     cors: { origin: "*" },
     rejectUnauthorized: false,
     transports: ["websocket", "polling"],
     pingTimeout: 60000
 });
-export let pairingCodes = {}; // Store active codes
-
 const io = socket.of('/data-sync');
+
+const job = schedule.scheduleJob('* * * * *', function () {
+    connectedDevices = connectedDevices.filter(device => device.status === 'online');
+    io.emit("list-devices", connectedDevices);
+    console.log('Cron job running every minute');
+});
 io.on("connection", (socket) => {
     console.log("Client connected:", socket.id);
     const devicePresent = connectedDevices.includes(socket.id)
