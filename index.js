@@ -10,7 +10,6 @@ const app = express();
 const server = http.createServer(app);
 
 connectDB()
-app.use(cors());
 app.use(express.json());
 app.get('/api/screens', async (req, res) => {
     const screens = await Screen.find({})
@@ -53,6 +52,8 @@ app.delete('/api/screens/:id', async (req, res) => {
     await Screen.deleteOne({ _id: req.params.id });
     res.send({ message: 'Screen deleted successfully' })
 });
+app.use(cors());
+
 const connectedDevices = []
 const socket = new Server(server, {
     cors: { origin: "*" },
