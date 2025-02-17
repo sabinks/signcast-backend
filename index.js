@@ -11,6 +11,13 @@ const server = http.createServer(app);
 
 connectDB()
 app.use(express.json());
+const corsOptions = {
+    // origin:'https://abc.onrender.com',
+    AccessControlAllowOrigin: '*',
+    origin: '*',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE'
+}
+app.use(cors(corsOptions))
 app.get('/api/screens', async (req, res) => {
     const screens = await Screen.find({})
     res.send(screens)
@@ -52,7 +59,7 @@ app.delete('/api/screens/:id', async (req, res) => {
     await Screen.deleteOne({ _id: req.params.id });
     res.send({ message: 'Screen deleted successfully' })
 });
-app.use(cors());
+
 
 const connectedDevices = []
 const socket = new Server(server, {
