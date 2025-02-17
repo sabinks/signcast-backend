@@ -11,6 +11,7 @@ const server = http.createServer(app);
 
 connectDB()
 app.use(express.json());
+app.use(cors())
 
 app.get('/api/screens', async (req, res) => {
     const screens = await Screen.find({})
@@ -53,13 +54,6 @@ app.delete('/api/screens/:id', async (req, res) => {
     await Screen.deleteOne({ _id: req.params.id });
     res.send({ message: 'Screen deleted successfully' })
 });
-const corsOptions = {
-    origin: 'https://signcast-frontend.sabinks.com',
-    AccessControlAllowOrigin: '*',
-    origin: '*',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE'
-}
-app.use(cors(corsOptions))
 
 const connectedDevices = []
 const socket = new Server(server, {
@@ -69,7 +63,7 @@ const socket = new Server(server, {
     pingTimeout: 60000
 });
 
-const io = socket.of('/socket.io');
+const io = socket.of('/data-sync');
 io.on("connection", (socket) => {
     console.log("Client connected:", socket.id);
     const devicePresent = connectedDevices.includes(socket.id)
