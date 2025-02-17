@@ -13,7 +13,7 @@ function validateScreen(data) {
     const schema = Joi.object({
         screenId: Joi.string().required(),
         name: Joi.string().required(),
-        content: Joi.string().required(),
+        content: Joi.object().required(),
     })
     return schema.validate(data, { abortEarly: false })
 }

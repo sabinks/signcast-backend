@@ -1,15 +1,59 @@
 import express from 'express';
 import http from 'http'
-import fs from 'fs';
 import cors from 'cors';
 import 'dotenv/config';
 import { Server } from 'socket.io';
 import connectDB from './config/db.js'
-import { Screen } from './model/screen.js';
+import { Screen, validateScreen } from './model/screen.js';
 
 const app = express();
 const server = http.createServer(app);
 
+connectDB()
+app.use(cors());
+app.use(express.json());
+app.get('/api/screens', async (req, res) => {
+    const screens = await Screen.find({})
+    res.send(screens)
+});
+app.post('/api/screens', async (req, res) => {
+    const { error } = validateScreen(req.body)
+    if (error) {
+        const errors = error.details.map(err => ({
+            message: err.message,
+            key: err.context.key
+        }))
+        return res.status(422).send(errors)
+    }
+    const screen = Screen({
+        screenId: req.body.screenId,
+        name: req.body.name,
+        content: req.body.content
+    })
+    await screen.save();
+    res.send({ message: 'Screen added successfully' })
+});
+app.put('/api/screens/:id', async (req, res) => {
+    const { error } = validateScreen(req.body)
+    if (error) {
+        const errors = error.details.map(err => ({
+            message: err.message,
+            key: err.context.key
+        }))
+        return res.status(422).send(errors)
+    }
+    const screen = await Screen.findOne({ _id: req.params.id });
+    screen.screenId = req.body.screenId;
+    screen.name = req.body.name;
+    screen.content = req.body.content;
+    await screen.save();
+    res.send({ message: 'Screen updated successfully' })
+});
+app.delete('/api/screens/:id', async (req, res) => {
+    await Screen.deleteOne({ _id: req.params.id });
+    res.send({ message: 'Screen deleted successfully' })
+});
+const connectedDevices = []
 const socket = new Server(server, {
     cors: { origin: "*" },
     rejectUnauthorized: false,
@@ -18,12 +62,6 @@ const socket = new Server(server, {
 });
 
 const io = socket.of('/socket.io');
-connectDB()
-app.use(cors());
-app.use(express.json());
-
-const connectedDevices = []
-
 io.on("connection", (socket) => {
     console.log("Client connected:", socket.id);
     const devicePresent = connectedDevices.includes(socket.id)
@@ -34,6 +72,9 @@ io.on("connection", (socket) => {
     socket.on("get-all-screens", async () => {
         const screens = await Screen.find({})
         io.emit("list-screens", screens);
+    });
+    socket.on("get-all-devices", async () => {
+        io.emit("list-devices", connectedDevices);
     });
 
     socket.on("add-screen", async (data) => {
@@ -55,6 +96,7 @@ io.on("connection", (socket) => {
         await screen.save();
         const screens = await Screen.find({})
         io.emit("list-screens", screens);
+        io.emit("list-devices", connectedDevices);
     });
 
     socket.on("delete-screen", async (payload) => {
@@ -62,16 +104,19 @@ io.on("connection", (socket) => {
         await Screen.deleteOne({ screenId });
         const screens = await Screen.find({})
         io.emit("list-screens", screens);
+        io.emit("list-devices", connectedDevices);
+
     });
 
     socket.on("request-content", async (payload) => {
         const { screenId } = payload
         const index = connectedDevices.findIndex(device => device.id === socket.id)
-        connectedDevices[index].sceeenId = screenId
+        connectedDevices[index].screenId = screenId
         const screen = await Screen.findOne({ screenId });
-        // const content = JSON.parse(fs.readFileSync(contentFile, "utf-8"));
         io.emit("update-content", screen);
+        io.emit("list-devices", connectedDevices);
     });
+
     socket.on("sync-screen-with-devices", async (payload) => {
         const { screenId } = payload
         console.log(connectedDevices);
@@ -86,6 +131,7 @@ io.on("connection", (socket) => {
         const index = connectedDevices.findIndex(device => device.id === socket.id)
         connectedDevices[index].status = 'offline'
         console.log("Client disconnected:", socket.id)
+        io.emit("list-devices", connectedDevices);
     });
 });
 
